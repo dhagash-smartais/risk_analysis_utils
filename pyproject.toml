@@ -8,6 +8,16 @@ version = "0.1.0"
 description = "A utility for risk analysis from the results of our integration tests"
 authors = [{ name = "Dhagash Desai", email = "dhagash.desai@smartais.de" }]
 
+dependencies = [
+    "numpy",
+    "rich",
+    "tqdm",
+    "typer",
+]
+
+[project.scripts]
+risk_analysis_pipeline = "risk_analysis_utils.tools.cmd:run"
+
 [tool.black]
 line-length = 100
 
