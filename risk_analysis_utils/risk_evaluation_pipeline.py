@@ -40,6 +40,7 @@ class RiskEvaluationPipeline:
                 for obstacle in data["obstacles"]:
                     distance = obstacle["distance"]
                     bin_index = int(distance // self._resolution)
+                    # [TODO: Dhagash] Should we keep this check?
                     if (obstacle["end_frame"] - obstacle["start_frame"]) < 3:
                         continue
                     if bin_index >= self._num_bins:
