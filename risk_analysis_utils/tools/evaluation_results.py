@@ -84,3 +84,38 @@ class EvaluationResults:
             msg = f"[bold green]{n_free} files had no obstacles.[/bold green]"
         console.print("\n[bold underline]Obstacle-Free Files[/bold underline]\n")
         console.print(msg)
+
+    def log_to_file(self, file_path: str) -> None:
+        """
+        Write the obstacle analysis results to a text file at the given file path.
+        Includes bin counts for higher and dropoff obstacles, overall statistics, and obstacle-free file names.
+        """
+        bin_ranges = self._get_bin_ranges()
+        with open(file_path, "w") as f:
+            f.write("Obstacle Distribution by Distance Bin\n")
+            f.write("=" * 40 + "\n")
+            f.write(f"{'Bin Range (m)':<20}{'Higher Obstacle':<20}{'Dropoff':<20}\n")
+            for i, (start, end) in enumerate(bin_ranges):
+                f.write(
+                    f"{start:.2f} - {end:.2f}    {self.higher_obstacle_bins[i]:<20}{self.dropoff_bins[i]:<20}\n"
+                )
+            f.write("\nOverall Obstacle Statistics\n")
+            f.write("=" * 40 + "\n")
+            total_higher = int(np.sum(self.higher_obstacle_bins))
+            total_dropoff = int(np.sum(self.dropoff_bins))
+            total_both = self._count_both_type
+            total_obstacles = total_higher + total_dropoff + total_both
+            f.write(f"Total Obstacles: {total_obstacles}\n")
+            f.write(f"Higher Obstacles: {total_higher}\n")
+            f.write(f"Dropoff Obstacles: {total_dropoff}\n")
+            f.write(f"Both (Higher & Dropoff): {total_both}\n")
+            n_free = len(self.obstacle_free_file_names)
+            if self._num_files:
+                msg = f"{n_free} out of {self._num_files} files had no obstacles."
+            else:
+                msg = f"{n_free} files had no obstacles."
+            f.write("\nObstacle-Free Files\n")
+            f.write("=" * 40 + "\n")
+            f.write(msg + "\n")
+            for name in self.obstacle_free_file_names:
+                f.write(f"{name}\n")
