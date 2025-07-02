@@ -3,6 +3,9 @@ from rich.console import Console
 from rich.table import Table
 
 import numpy as np
+import os
+import json
+import csv
 
 
 class EvaluationResults:
@@ -127,44 +130,9 @@ class EvaluationResults:
             for name in self.obstacle_free_file_names:
                 f.write(f"{name}\n")
 
-            # Write file-wise obstacle frequency by bin
-            f.write("\nFile-wise Obstacle Frequency by Bin\n")
-            f.write("=" * 40 + "\n")
-
-            # Write header
-            header = ["File Name"] + [f"{start:.2f}-{end:.2f}" for (start, end) in bin_ranges]
-            f.write(" | ".join(header) + "\n")
-
-            # Collect all file names
-            file_names = set()
-            for bin_files in self.higher_obstacles_bin_files.values():
-                for fdict in bin_files:
-                    file_names.add(fdict["name"])
-            for bin_files in self.dropoff_bins_files.values():
-                for fdict in bin_files:
-                    file_names.add(fdict["name"])
-            file_names = sorted(file_names)
-
-            # Write each file's row
-            for file_name in file_names:
-                row = [file_name]
-                has_obstacle = False
-                for bin_idx in range(self._num_bins):
-                    higher_count = sum(
-                        1
-                        for fdict in self.higher_obstacles_bin_files[bin_idx]
-                        if fdict.get("name") == file_name
-                    )
-                    dropoff_count = sum(
-                        1
-                        for fdict in self.dropoff_bins_files[bin_idx]
-                        if fdict.get("name") == file_name
-                    )
-                    if higher_count > 0 or dropoff_count > 0:
-                        has_obstacle = True
-                    row.append(f"{higher_count}|{dropoff_count}")
-                if has_obstacle:
-                    f.write(" | ".join(row) + "\n")
+        # Save obstacle frequency as JSON in the same folder
+        csv_path = os.path.splitext(file_path)[0] + "_obstacle_frequency.csv"
+        self.save_obstacle_frequency_csv(csv_path)
 
     def _rich_duration_of_each_file(self, table_format: box.Box = box.HORIZONTALS) -> Table:
         """
@@ -272,3 +240,89 @@ class EvaluationResults:
         table.add_row()
         table.add_row(*total_row, style="bold")
         return table
+
+    def save_obstacle_frequency_json(self, file_path: str):
+        bin_ranges = self._get_bin_ranges()
+        file_names = set()
+        for bin_files in self.higher_obstacles_bin_files.values():
+            for fdict in bin_files:
+                file_names.add(fdict["name"])
+        for bin_files in self.dropoff_bins_files.values():
+            for fdict in bin_files:
+                file_names.add(fdict["name"])
+        file_names = sorted(file_names)
+
+        data = {}
+        for file_name in file_names:
+            bins = []
+            file_higher_total = 0
+            file_dropoff_total = 0
+            for bin_idx, (start, end) in enumerate(bin_ranges):
+                higher_count = sum(
+                    1
+                    for fdict in self.higher_obstacles_bin_files[bin_idx]
+                    if fdict.get("name") == file_name
+                )
+                dropoff_count = sum(
+                    1
+                    for fdict in self.dropoff_bins_files[bin_idx]
+                    if fdict.get("name") == file_name
+                )
+                bins.append(
+                    {
+                        "range": f"{start:.2f}-{end:.2f}",
+                        "higher": higher_count,
+                        "dropoff": dropoff_count,
+                    }
+                )
+                file_higher_total += higher_count
+                file_dropoff_total += dropoff_count
+            file_total = file_higher_total + file_dropoff_total
+            data[file_name] = {"bins": bins, "total": file_total}
+
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=2)
+
+    def save_obstacle_frequency_csv(self, file_path: str):
+        bin_ranges = self._get_bin_ranges()
+        file_names = set()
+        for bin_files in self.higher_obstacles_bin_files.values():
+            for fdict in bin_files:
+                file_names.add(fdict["name"])
+        for bin_files in self.dropoff_bins_files.values():
+            for fdict in bin_files:
+                file_names.add(fdict["name"])
+        file_names = sorted(file_names)
+
+        # Prepare header: File Name, each bin, Total Higher, Total Dropoff, Grand Total
+        header = (
+            ["File Name"]
+            + [f"{start:.2f}-{end:.2f}" for (start, end) in bin_ranges]
+            + ["Total Higher", "Total Dropoff", "Grand Total"]
+        )
+
+        with open(file_path, "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(header)
+
+            for file_name in file_names:
+                row = [file_name]
+                file_higher_total = 0
+                file_dropoff_total = 0
+                for bin_idx, (start, end) in enumerate(bin_ranges):
+                    higher_count = sum(
+                        1
+                        for fdict in self.higher_obstacles_bin_files[bin_idx]
+                        if fdict.get("name") == file_name
+                    )
+                    dropoff_count = sum(
+                        1
+                        for fdict in self.dropoff_bins_files[bin_idx]
+                        if fdict.get("name") == file_name
+                    )
+                    row.append(f"{higher_count}|{dropoff_count}")
+                    file_higher_total += higher_count
+                    file_dropoff_total += dropoff_count
+                grand_total = file_higher_total + file_dropoff_total
+                row.extend([str(file_higher_total), str(file_dropoff_total), str(grand_total)])
+                writer.writerow(row)
