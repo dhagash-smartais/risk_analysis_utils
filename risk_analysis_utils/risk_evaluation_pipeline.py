@@ -38,8 +38,14 @@ class RiskEvaluationPipeline:
                     continue
 
                 for obstacle in data["obstacles"]:
+                    duration = data.get("scene_duration")
+                    name = data["name"]
+                    print(f"Duration and name of the file is {name}  {duration}")
                     distance = obstacle["distance"]
                     bin_index = int(distance // self._resolution)
+                    self.results.durations_of_each_recording.append(
+                        {"name": data["name"], "duration": duration}
+                    )
                     # [TODO: Dhagash] Should we keep this check?
                     if (obstacle["end_frame"] - obstacle["start_frame"]) < 3:
                         continue
