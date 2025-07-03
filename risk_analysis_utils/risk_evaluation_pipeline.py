@@ -23,6 +23,7 @@ class RiskEvaluationPipeline:
         self._create_output_folder()
         self._write_evaluation()
         self._write_results_to_file()
+        self._write_durations_to_csv()
         return self.results
 
     def _run_evaluation(self):
@@ -96,6 +97,15 @@ class RiskEvaluationPipeline:
                     for name in filenames:
                         f.write(f"    - {name}\n")
                     f.write("\n")
+
+    def _write_durations_to_csv(self):
+        if self.results_dir is None:
+            raise ValueError(
+                "results_dir is not set. Please ensure the output folder is created before writing evaluation."
+            )
+        filename = "durations_of_each_recording.csv"
+        filepath = os.path.join(str(self.results_dir), filename)
+        self.results.save_durations_csv(filepath)
 
     @staticmethod
     def _get_results_dir(evaluation_dir: str):

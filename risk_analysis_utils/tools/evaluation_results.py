@@ -326,3 +326,23 @@ class EvaluationResults:
                 grand_total = file_higher_total + file_dropoff_total
                 row.extend([str(file_higher_total), str(file_dropoff_total), str(grand_total)])
                 writer.writerow(row)
+
+    def save_durations_csv(self, file_path: str):
+        """
+        Save the durations_of_each_recording to a CSV file with columns 'name' and 'duration_minutes' (rounded to 2 decimals, duration in minutes).
+        Skip entries with duration 0 or name 'N/A', and avoid duplicate names.
+        """
+        filenames = set()
+        with open(file_path, "w", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=["name", "duration_minutes"])
+            writer.writeheader()
+            for entry in self.durations_of_each_recording:
+                name = entry.get("name", "N/A")
+                duration_sec = entry.get("duration", 0)
+                if duration_sec == 0 or name == "N/A":
+                    continue
+                if name in filenames:
+                    continue
+                filenames.add(name)
+                duration_min = round(duration_sec / 60, 2)
+                writer.writerow({"name": name, "duration_minutes": duration_min})
