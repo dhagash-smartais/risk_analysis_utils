@@ -39,8 +39,6 @@ class RiskEvaluationPipeline:
 
                 for obstacle in data["obstacles"]:
                     duration = data.get("scene_duration")
-                    name = data["name"]
-                    print(f"Duration and name of the file is {name}  {duration}")
                     distance = obstacle["distance"]
                     bin_index = int(distance // self._resolution)
                     self.results.durations_of_each_recording.append(
